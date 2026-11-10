@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>EIIN দিয়ে প্রতিষ্ঠানের তথ্য</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Hind Siliguri", "Noto Sans Bengali", system-ui, sans-serif; background: #eef2f7; color: #1e293b; min-height: 100vh; }
+  .hero { background: linear-gradient(135deg, #1e3a8a 0%, #0e7490 100%); color: #fff; padding: 44px 16px 76px; text-align: center; position: relative; overflow: hidden; }
+  .hero::after { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 80% 20%, rgba(255,255,255,.14), transparent 55%); pointer-events: none; }
+  .hero h1 { font-size: clamp(22px, 5vw, 32px); margin-bottom: 8px; position: relative; }
+  .hero p { opacity: .88; font-size: clamp(14px, 3.5vw, 17px); position: relative; }
+  .wrap { max-width: 960px; margin: -56px auto 0; padding: 0 14px 48px; position: relative; }
+  .card { background: #fff; border-radius: 16px; padding: 22px; box-shadow: 0 8px 28px rgba(15, 40, 80, .10); margin-bottom: 18px; animation: rise .45s ease both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  .search-row { display: flex; gap: 10px; }
+  input#eiin { flex: 1; min-width: 0; font-size: 22px; padding: 13px 14px; border: 2px solid #cbd5e1; border-radius: 12px; letter-spacing: 3px; text-align: center; }
+  input#eiin:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.15); }
+  button#go { font-size: 17px; font-weight: 600; padding: 13px 26px; border: 0; border-radius: 12px; background: linear-gradient(135deg, #2563eb, #0e7490); color: #fff; cursor: pointer; transition: transform .12s ease, box-shadow .12s ease; white-space: nowrap; }
+  button#go:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(37,99,235,.35); }
+  button#go:disabled { opacity: .6; cursor: default; }
+  .status { margin-top: 14px; min-height: 26px; text-align: center; color: #64748b; }
+  .error { color: #dc2626; }
+  .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid #cbd5e1; border-top-color: #2563eb; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: -4px; margin-right: 8px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .inst-head { display: flex; align-items: flex-start; gap: 14px; }
+  .inst-badge { flex: 0 0 auto; width: 54px; height: 54px; border-radius: 15px; background: linear-gradient(135deg, #2563eb, #0e7490); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 27px; }
+  .inst-head h2 { font-size: clamp(19px, 4.5vw, 25px); line-height: 1.35; }
+  .eiin-line { color: #64748b; margin-top: 3px; }
+  .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-top: 14px; }
+  .meta { background: linear-gradient(180deg, #f8fafc, #f1f5f9); border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 14px; }
+  .meta .k { font-size: 12.5px; color: #64748b; margin-bottom: 3px; }
+  .meta .v { font-weight: 700; font-size: 16.5px; }
+  .toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
+  .toolbar h3 { font-size: 19px; margin-right: auto; }
+  .toolbar input { flex: 1 1 220px; font-size: 15px; padding: 10px 14px; border: 2px solid #e2e8f0; border-radius: 10px; }
+  .toolbar input:focus { outline: none; border-color: #2563eb; }
+  .count-pill { background: #dbeafe; color: #1d4ed8; font-weight: 700; border-radius: 999px; padding: 4px 14px; font-size: 14px; white-space: nowrap; }
+  .hint { font-size: 13px; color: #94a3b8; margin-bottom: 10px; }
+  /* desktop table */
+  .table-scroll { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 12px; }
+  table.t { width: 100%; border-collapse: collapse; font-size: 14.5px; min-width: 780px; }
+  table.t thead th { position: sticky; top: 0; background: #1e3a8a; color: #fff; padding: 11px 10px; text-align: left; font-weight: 600; white-space: nowrap; z-index: 1; }
+  table.t tbody td { padding: 11px 10px; border-bottom: 1px solid #eef2f7; vertical-align: middle; }
+  table.t tbody tr.main { cursor: pointer; transition: background .12s ease; }
+  table.t tbody tr.main:hover { background: #f0f7ff; }
+  td.idx { font-weight: 700; color: #1d4ed8; white-space: nowrap; }
+  td .sub { display: block; font-size: 11.5px; color: #94a3b8; font-weight: 400; }
+  tr.detail td { background: #f8fbff; padding: 0 !important; border-bottom: 2px solid #dbeafe; }
+  /* mobile cards */
+  .tcard { border: 1px solid #e2e8f0; border-radius: 14px; margin-bottom: 10px; overflow: hidden; background: #fff; animation: fadein .3s ease both; }
+  .tcard-head { display: flex; align-items: center; gap: 12px; padding: 13px 14px; cursor: pointer; }
+  .tcard-head:active { background: #f8fafc; }
+  .avatar { flex: 0 0 auto; width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #2563eb, #0e7490); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px; overflow: hidden; }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .tcard-head .tt { flex: 1; min-width: 0; }
+  .tname { font-weight: 700; font-size: 16px; }
+  .tdes { font-size: 13px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .idxpill { flex: 0 0 auto; background: #eef4ff; color: #1d4ed8; font-weight: 700; font-size: 12.5px; border-radius: 999px; padding: 4px 10px; max-width: 110px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chev { flex: 0 0 auto; color: #94a3b8; font-size: 18px; transition: transform .2s ease; }
+  .tcard.open .chev { transform: rotate(180deg); }
+  /* shared detail panel */
+  .tdetail { border-top: 1px dashed #cbd5e1; padding: 14px; background: #fbfdff; animation: fadein .25s ease both; }
+  .dgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+  .dphoto { grid-row: span 3; }
+  .dphoto img { width: 100%; max-width: 130px; border-radius: 10px; border: 1px solid #e2e8f0; }
+  .df { background: #fff; border: 1px solid #eef2f7; border-radius: 10px; padding: 8px 10px; }
+  .df .dk { font-size: 11.5px; color: #94a3b8; margin-bottom: 2px; }
+  .df .dv { font-size: 14px; font-weight: 600; word-break: break-word; }
+  .empty-note { text-align: center; color: #94a3b8; padding: 26px 10px; }
+  .foot { text-align: center; color: #94a3b8; font-size: 13px; margin-top: 8px; }
+  .hidden { display: none !important; }
+  .desktop-only { display: block; }
+  .mobile-only { display: none; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  @media (max-width: 720px) {
+    .desktop-only { display: none !important; }
+    .mobile-only { display: block; }
+    .card { padding: 16px; }
+    .search-row { flex-direction: column; }
+    button#go { width: 100%; }
+    .toolbar h3 { width: 100%; }
+    .dgrid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  }
+</style>
+</head>
+<body>
+<div class="hero">
+  <h1>🏫 EIIN দিয়ে প্রতিষ্ঠানের তথ্য</h1>
+  <p>৬ সংখ্যার EIIN লিখুন — প্রতিষ্ঠান ও শিক্ষকদের পূর্ণ বিবরণ (জন্ম তারিখসহ) দেখুন</p>
+</div>
+
+<div class="wrap">
+  <div class="card">
+    <div class="search-row">
+      <input id="eiin" inputmode="numeric" maxlength="6" placeholder="যেমন: 107977" autocomplete="off" />
+      <button id="go">খুঁজুন</button>
+    </div>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div class="card hidden" id="resultCard">
+    <div class="inst-head">
+      <div class="inst-badge">🏫</div>
+      <div>
+        <h2 id="rName"></h2>
+        <div class="eiin-line">EIIN: <b id="rEiin"></b> · <span id="rDistrict"></span></div>
+      </div>
+    </div>
+    <div class="meta-grid">
+      <div class="meta"><div class="k">শিক্ষক / জনবল</div><div class="v" id="rTeachers"></div></div>
+      <div class="meta"><div class="k">অধ্যক্ষ / প্রধান শিক্ষক</div><div class="v" id="rPrincipal" style="font-size:15px;"></div></div>
+      <div class="meta"><div class="k">উপাধ্যক্ষ / সহকারী প্রধান</div><div class="v" id="rVp" style="font-size:15px;"></div></div>
+    </div>
+  </div>
+
+  <div class="card hidden" id="teacherCard">
+    <div class="toolbar">
+      <h3>👩‍🏫 শিক্ষক তালিকা <span class="count-pill" id="tCount"></span></h3>
+      <input id="tFilter" placeholder="নাম / ইনডেক্স / পদবি / বিষয় দিয়ে খুঁজুন…" autocomplete="off" />
+    </div>
+    <div class="hint">💡 যেকোনো সারিতে ট্যাপ/ক্লিক করলে তার <b>সম্পূর্ণ তথ্য</b> দেখা যাবে</div>
+    <div class="hint" id="bdayLine"><span id="bdayCount"></span> <label style="cursor:pointer"><input type="checkbox" id="bdayOnly"> 🎂 শুধু এই মাসের জন্মদিন দেখান</label> <button id="dlCsv" type="button" style="margin-left:8px">⬇ CSV ডাউনলোড</button></div>
+    <div class="table-scroll desktop-only">
+      <table class="t">
+        <thead><tr><th>ইনডেক্স নং</th><th>নাম</th><th>পদবি</th><th>বিষয়</th><th>জন্ম তারিখ</th><th>মোবাইল</th><th>ইমেইল</th></tr></thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
+    <div class="mobile-only" id="tCards"></div>
+    <div class="empty-note hidden" id="tEmpty">কোনো শিক্ষক মেলেনি।</div>
+  </div>
+
+  <div class="foot">তথ্যসূত্র: emis.gov.bd (শিক্ষা মন্ত্রণালয়ের পাবলিক পোর্টাল) · জন্ম তারিখ: EMIS রেজিস্ট্রেশন লুকআপ (পাবলিক সার্ভিস)</div>
+</div>
+
+<script>
+  var eiinInput = document.getElementById('eiin');
+  var goBtn = document.getElementById('go');
+  var statusEl = document.getElementById('status');
+  var resultCard = document.getElementById('resultCard');
+  var teacherCard = document.getElementById('teacherCard');
+  var tBody = document.getElementById('tBody');
+  var tCards = document.getElementById('tCards');
+  var tFilter = document.getElementById('tFilter');
+  var tEmpty = document.getElementById('tEmpty');
+  var bdayOnly = document.getElementById('bdayOnly');
+  var bdayCount = document.getElementById('bdayCount');
+  var allTeachers = [];
+
+  var FIELDS = [
+    ['IndexNo','ইনডেক্স নং'], ['EmpId','এমপ্লয়ি আইডি'], ['Id','রেকর্ড আইডি'],
+    ['FullNameBn','নাম (বাংলা)'], ['FullName','নাম (ইংরেজি)'], ['Dob','জন্ম তারিখ'],
+    ['DesignationNameBn','পদবি'], ['DesignationType','পদের ধরন'], ['SubjectName','বিষয়'],
+    ['BCSBatchBn','বিসিএস ব্যাচ'], ['DistrictName','জেলা'],
+    ['MobileNo','মোবাইল'], ['Email','ইমেইল'],
+    ['JoiningDate','যোগদান'], ['PresentJoiningDate','বর্তমান পদে যোগদান'],
+    ['OthersJoiningDate','পূর্ব যোগদান'], ['OSDJoiningDate','ওএসডি যোগদান'],
+    ['PresentDesignationType','বর্তমান পদের ধরন'],
+    ['InstituteInstituteNameInBangla','প্রতিষ্ঠান']
+  ];
+
+  function bn(n) { try { return Number(n).toLocaleString('bn-BD'); } catch (e) { return n; } }
+  function dobBn(d) {
+    if (!d) return '';
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(d));
+    if (!m) return String(d);
+    return (m[3] + '/' + m[2] + '/' + m[1]).replace(/\d/g, function (c) { return '০১২৩৪৫৬৭৮৯'[+c]; });
+  }
+  function dobMonth(d) { var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(d || '')); return m ? +m[2] : 0; }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function idxOf(t) { return (t.IndexNo && t.IndexNo !== '-') ? t.IndexNo : ''; }
+  function photoUrl(html) {
+    if (!html || html === '-') return '';
+    var m = /src='([^']+)'/.exec(html) || /src="([^"]+)"/.exec(html);
+    if (!m) return '';
+    var u = m[1];
+    if (u.charAt(0) === '/') u = 'https://emis.gov.bd' + u;
+    return u;
+  }
+  function detailHtml(t) {
+    var h = '<div class="dgrid">';
+    var ph = photoUrl(t.Image);
+    if (ph) h += '<div class="dphoto"><img src="' + esc(ph) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'"></div>';
+    FIELDS.forEach(function (f) {
+      var v = t[f[0]];
+      if (f[0] === 'IndexNo' && (!v || v === '-')) v = t.EmpId ? t.EmpId + ' (এমপ্লয়ি আইডি)' : '';
+      if (f[0] === 'Dob') v = dobBn(v);
+      if (v && v !== '-') h += '<div class="df"><div class="dk">' + f[1] + '</div><div class="dv">' + esc(v) + '</div></div>';
+    });
+    return h + '</div>';
+  }
+
+  function renderTeachers() {
+    var q = tFilter.value.trim().toLowerCase();
+    var thisMonth = new Date().getMonth() + 1;
+    var bdayThisMonth = allTeachers.filter(function (t) { return dobMonth(t.Dob) === thisMonth; }).length;
+    bdayCount.textContent = allTeachers.length ? ('🎂 এই মাসে জন্মদিন: ' + bn(bdayThisMonth) + ' জন') : '';
+    var rows = allTeachers.filter(function (t) {
+      if (bdayOnly.checked && dobMonth(t.Dob) !== thisMonth) return false;
+      if (!q) return true;
+      return ((t.IndexNo || '') + ' ' + (t.EmpId || '') + ' ' + (t.FullNameBn || '') + ' ' + (t.DesignationNameBn || '') + ' ' + (t.SubjectName || '')).toLowerCase().indexOf(q) !== -1;
+    });
+    var th = '', ch = '';
+    rows.forEach(function (t, i) {
+      var idTxt = idxOf(t);
+      var idSub = idTxt ? '' : (t.EmpId ? '<span class="sub">এমপ্লয়ি আইডি</span>' : '');
+      var idShow = idTxt || t.EmpId || '—';
+      th += '<tr class="main" data-i="' + i + '"><td class="idx">' + esc(idShow) + idSub + '</td>'
+        + '<td>' + esc(t.FullNameBn || '') + '</td><td>' + esc(t.DesignationNameBn || '') + '</td>'
+        + '<td>' + esc(t.SubjectName || '') + '</td><td>' + esc(dobBn(t.Dob)) + '</td>'
+        + '<td>' + esc(t.MobileNo || '') + '</td>'
+        + '<td>' + esc(t.Email || '') + '</td></tr>'
+        + '<tr class="detail hidden" data-i="' + i + '"><td colspan="7"><div class="tdetail">' + detailHtml(t) + '</div></td></tr>';
+      var ph = photoUrl(t.Image);
+      var av = ph ? '<img src="' + esc(ph) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">'
+                  : esc((t.FullNameBn || '?').trim().charAt(0));
+      ch += '<div class="tcard" data-i="' + i + '">'
+        + '<div class="tcard-head"><div class="avatar">' + av + '</div>'
+        + '<div class="tt"><div class="tname">' + esc(t.FullNameBn || '') + '</div>'
+        + '<div class="tdes">' + esc(t.DesignationNameBn || '') + (t.SubjectName ? ' · ' + esc(t.SubjectName) : '') + (t.Dob ? ' · 🎂 ' + esc(dobBn(t.Dob)) : '') + '</div></div>'
+        + '<span class="idxpill">' + esc(idShow) + '</span><span class="chev">▾</span></div>'
+        + '<div class="tdetail hidden">' + detailHtml(t) + '</div></div>';
+    });
+    tBody.innerHTML = th;
+    tCards.innerHTML = ch;
+    tEmpty.classList.toggle('hidden', rows.length > 0);
+    document.getElementById('tCount').textContent = bn(rows.length) + ' / ' + bn(allTeachers.length);
+  }
+
+  tBody.addEventListener('click', function (ev) {
+    var tr = ev.target.closest('tr.main');
+    if (!tr) return;
+    var det = tBody.querySelector('tr.detail[data-i="' + tr.getAttribute('data-i') + '"]');
+    if (det) det.classList.toggle('hidden');
+  });
+  tCards.addEventListener('click', function (ev) {
+    var card = ev.target.closest('.tcard');
+    if (!card) return;
+    card.classList.toggle('open');
+    card.querySelector('.tdetail').classList.toggle('hidden');
+  });
+  tFilter.addEventListener('input', renderTeachers);
+  bdayOnly.addEventListener('change', renderTeachers);
+  document.getElementById('dlCsv').addEventListener('click', function () {
+    if (!allTeachers.length) return;
+    var q = tFilter.value.trim().toLowerCase();
+    var thisMonth = new Date().getMonth() + 1;
+    var rows = allTeachers.filter(function (t) {
+      if (bdayOnly.checked && dobMonth(t.Dob) !== thisMonth) return false;
+      if (!q) return true;
+      return ((t.IndexNo || '') + ' ' + (t.EmpId || '') + ' ' + (t.FullNameBn || '') + ' ' + (t.DesignationNameBn || '') + ' ' + (t.SubjectName || '')).toLowerCase().indexOf(q) !== -1;
+    });
+    function cq(v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; }
+    var lines = [['এমপ্লয়ি আইডি', 'নাম (বাংলা)', 'নাম (English)', 'পদবি', 'বিষয়', 'জন্ম তারিখ', 'মোবাইল', 'ইমেইল', 'যোগদান'].map(cq).join(',')];
+    rows.forEach(function (t) {
+      lines.push([t.EmpId, t.FullNameBn, t.FullName, t.DesignationNameBn, t.SubjectName, (t.Dob || '').slice(0, 10), t.MobileNo, t.Email, t.JoiningDate].map(cq).join(','));
+    });
+    var blob = new Blob(['\ufeff' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'teachers-' + (document.getElementById('rEiin').textContent || 'eiin') + '.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+
+  async function loadDob() {
+    var ids = allTeachers.map(function (t) { return t.EmpId; }).filter(function (x) { return x && x !== '-'; });
+    if (!ids.length) return;
+    statusEl.innerHTML = '<span class="spinner"></span>জন্ম তারিখ আনা হচ্ছে…';
+    try {
+      var r = await fetch('/api/dob?ids=' + encodeURIComponent(ids.join(',')));
+      var dj = await r.json();
+      var map = (dj && dj.dob) || {};
+      allTeachers.forEach(function (t) { if (map[t.EmpId]) t.Dob = map[t.EmpId]; });
+      renderTeachers();
+      statusEl.textContent = (dj && dj.missing && dj.missing.length)
+        ? ('জন্ম তারিখ পাওয়া যায়নি: ' + bn(dj.missing.length) + ' জনের')
+        : '';
+    } catch (err) { statusEl.textContent = ''; }
+  }
+
+  async function search() {
+    var e = eiinInput.value.trim();
+    resultCard.classList.add('hidden');
+    teacherCard.classList.add('hidden');
+    if (!/^\d{6}$/.test(e)) {
+      statusEl.innerHTML = '<span class="error">৬ সংখ্যার EIIN দিন।</span>';
+      eiinInput.focus();
+      return;
+    }
+    goBtn.disabled = true;
+    statusEl.innerHTML = '<span class="spinner"></span>তথ্য আনা হচ্ছে…';
+    try {
+      var r = await fetch('/api/ein?eiin=' + encodeURIComponent(e));
+      var j = await r.json();
+      if (!j.ok) { statusEl.innerHTML = '<span class="error">' + esc(j.error) + '</span>'; return; }
+      document.getElementById('rName').textContent = j.instituteNameBn || '—';
+      document.getElementById('rEiin').textContent = j.eiin;
+      document.getElementById('rDistrict').textContent = j.district || '';
+      document.getElementById('rTeachers').textContent = bn(j.teacherCount) + ' জন';
+      document.getElementById('rPrincipal').textContent = (j.principal && j.principal.nameBn) || '—';
+      document.getElementById('rVp').textContent = (j.vicePrincipal && j.vicePrincipal.nameBn) || '—';
+      allTeachers = j.teachers || [];
+      tFilter.value = '';
+      bdayOnly.checked = false;
+      renderTeachers();
+      statusEl.textContent = '';
+      resultCard.classList.remove('hidden');
+      teacherCard.classList.remove('hidden');
+      resultCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      loadDob();
+    } catch (err) {
+      statusEl.innerHTML = '<span class="error">সংযোগ করা যায়নি। আবার চেষ্টা করুন।</span>';
+    } finally {
+      goBtn.disabled = false;
+    }
+  }
+
+  goBtn.addEventListener('click', search);
+  eiinInput.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') search(); });
+</script>
+</body>
+</html>
